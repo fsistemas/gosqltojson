@@ -8,12 +8,18 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"strconv"
 	"strings"
+	"time"
 
 	"gorm.io/driver/mysql"
 	"gorm.io/driver/postgres"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
+)
+
+const (
+	DEFAULT_DATE_FORMAT = "2006-01-02"
 )
 
 var (
@@ -37,6 +43,14 @@ type Config struct {
 type ConectionConfig struct {
 	ConectionType   string
 	ConectionString string
+}
+
+var DATE_FIELDS = []string{
+	"CURRENT_DATE",
+	"START_CURRENT_MONTH",
+	"END_CURRENT_MONTH",
+	"START_CURRENT_YEAR",
+	"END_CURRENT_YEAR",
 }
 
 func NewConectionConfig(rawConectionString string) (*ConectionConfig, error) {
@@ -174,10 +188,99 @@ func parseQueryParams(args []string) (map[string]interface{}, error) {
 			i = i + 2
 		}
 
-		parameters[name] = value
+		parameters[name] = parse_parameter(value, "|")
 	}
 
 	return parameters, nil
+}
+
+func parse_parameter(v string, format_separator string) string {
+	if format_separator == "" {
+		format_separator = "|"
+	}
+
+	if v == "" {
+		return v
+	} else if is_number(v) {
+		return v
+	} else if strings.Contains(v, format_separator) {
+		parts := strings.Split(v, format_separator)
+		field := parts[0]
+		date_format := parts[1]
+
+		return parse_formula(field, date_format)
+	}
+
+	return parse_formula(v, DEFAULT_DATE_FORMAT)
+}
+
+func parse_formula(formula string, date_format string) string {
+	current_date := time.Now()
+
+	for _, date_field := range DATE_FIELDS {
+		if strings.Contains(formula, date_field) {
+			var separator string
+			sign := 1
+
+			if strings.Contains(formula, "+") {
+				separator = "+"
+			} else if strings.Contains(formula, "-") {
+				separator = "-"
+				sign = -1
+			}
+
+			if separator != "" {
+				parts := strings.Split(formula, separator)
+
+				to_add, err := strconv.Atoi(parts[1])
+
+				if err != nil {
+					log.Fatal(err.Error())
+				}
+
+				return parse_field(parts[0], sign*to_add, current_date, date_format)
+			}
+		}
+	}
+
+	return parse_field(formula, 0, current_date, date_format)
+}
+
+func parse_field(field string, to_add int, current_date time.Time, date_format string) string {
+	if field == "" {
+		return field
+	}
+
+	if date_format == "" {
+		date_format = DEFAULT_DATE_FORMAT
+	}
+
+	if field == "CURRENT_DATE" {
+		return current_date.AddDate(0, 0, to_add).Format(date_format)
+	} else if field == "START_CURRENT_MONTH" {
+		currentYear, currentMonth, _ := current_date.Date()
+		firstDayOfMonth := time.Date(currentYear, currentMonth, 1, 0, 0, 0, 0, current_date.Location())
+		return firstDayOfMonth.AddDate(0, to_add, 0).Format(date_format)
+	} else if field == "END_CURRENT_MONTH" {
+		currentYear, currentMonth, _ := current_date.Date()
+		firstDayOfMonth := time.Date(currentYear, currentMonth, 1, 0, 0, 0, 0, current_date.Location())
+		return firstDayOfMonth.AddDate(0, 1+to_add, -1).Format(date_format)
+	} else if field == "START_CURRENT_YEAR" {
+		currentYear := current_date.Year()
+		firstDayOfMonth := time.Date(currentYear, 1, 1, 0, 0, 0, 0, current_date.Location())
+		return firstDayOfMonth.AddDate(to_add, 0, 0).Format(date_format)
+	} else if field == "END_CURRENT_YEAR" {
+		currentYear := current_date.Year()
+		firstDayOfMonth := time.Date(currentYear, 1, 1, 0, 0, 0, 0, current_date.Location())
+		return firstDayOfMonth.AddDate(1+to_add, 0, -1).Format(date_format)
+	}
+
+	return field
+}
+
+func is_number(value string) bool {
+	_, err := strconv.Atoi(value)
+	return err == nil
 }
 
 func parseUsedQueryParams(queryRaw string, queryParamsMap map[string]interface{}) (map[string]interface{}, error) {
@@ -193,21 +296,7 @@ func parseUsedQueryParams(queryRaw string, queryParamsMap map[string]interface{}
 }
 
 func main() {
-	//myFlagSet := flag.NewFlagSet("", flag.ContinueOnError)
-	//err := myFlagSet.Parse(os.Args[1:])
-
-	/*
-		//flag.CommandLine.Init("", flag.ContinueOnError)
-		//err := flag.CommandLine.Parse(os.Args[1:])
-
-		if err != nil {
-			log.Fatal(err.Error())
-		}
-	*/
-
 	flag.Parse()
-
-	//fmt.Println(flag.Args())
 
 	config, err := loadConfigFile(*configFile)
 	if err != nil {
@@ -275,8 +364,6 @@ func main() {
 		defer sqlDB.Close()
 	}
 
-	//map[string]interface{}{"name": "jinzhu", "name2": "jinzhu2"})
-
 	queryParams, err := parseQueryParams(flag.Args())
 
 	if err != nil {
@@ -284,8 +371,6 @@ func main() {
 	}
 
 	usedQueryParams, err := parseUsedQueryParams(queryRaw, queryParams)
-
-	//fmt.Println(usedQueryParams)
 
 	if err != nil {
 		log.Fatal(err.Error())
@@ -316,7 +401,11 @@ func main() {
 	var result interface{}
 
 	if *firstOnly {
-		item := mapOfRows[0]
+		var item QueryResult
+
+		if len(mapOfRows) > 0 {
+			item = mapOfRows[0]
+		}
 
 		if len(mapOfRows) > 0 {
 			if *keyName != "" && *valueName != "" {
