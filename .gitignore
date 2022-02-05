@@ -1,0 +1,9 @@
+#binary
+gosqltojson
+#local config
+config.json
+#local multiline sql query
+*.sql
+#local sqlite databases
+*.db
+docker-compose.yml
