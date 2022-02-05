@@ -137,9 +137,7 @@ func parseRowsToMaps(rows *sql.Rows) ([]QueryResult, error) {
 
 	columns, err := rows.Columns()
 
-	if err != nil {
-		log.Fatal(err.Error())
-	}
+	handleError(err)
 
 	values := make([]interface{}, len(columns))
 	scan_args := make([]interface{}, len(columns))
@@ -234,9 +232,7 @@ func parse_formula(formula string, date_format string) string {
 
 				to_add, err := strconv.Atoi(parts[1])
 
-				if err != nil {
-					log.Fatal(err.Error())
-				}
+				handleError(err)
 
 				return parse_field(parts[0], sign*to_add, current_date, date_format)
 			}
@@ -295,13 +291,17 @@ func parseUsedQueryParams(queryRaw string, queryParamsMap map[string]interface{}
 	return usedQueryParams, nil
 }
 
+func handleError(err error) {
+	if err != nil {
+		log.Fatal(err.Error())
+	}
+}
+
 func main() {
 	flag.Parse()
 
 	config, err := loadConfigFile(*configFile)
-	if err != nil {
-		log.Fatal(err.Error())
-	}
+	handleError(err)
 
 	conectionString := config.getConection(*conectionName)
 	queryRaw := config.getQuery(*queryName)
@@ -325,39 +325,29 @@ func main() {
 	if conectionConfig.ConectionType == "mysql" {
 		sqlDB, err = sql.Open(conectionConfig.ConectionType, conectionConfig.ConectionString)
 
-		if err != nil {
-			log.Fatal(err.Error())
-		}
+		handleError(err)
 
 		db, err = gorm.Open(mysql.New(mysql.Config{
 			Conn: sqlDB,
 		}), &gorm.Config{})
 
-		if err != nil {
-			log.Fatal(err.Error())
-		}
+		handleError(err)
 	} else if conectionConfig.ConectionType == "postgres" {
 		sqlDB, err = sql.Open(conectionConfig.ConectionType, conectionConfig.ConectionString)
 
-		if err != nil {
-			log.Fatal(err.Error())
-		}
+		handleError(err)
 
 		db, err = gorm.Open(postgres.New(postgres.Config{
 			Conn: sqlDB,
 		}), &gorm.Config{})
 
-		if err != nil {
-			log.Fatal(err.Error())
-		}
+		handleError(err)
 	} else if strings.HasPrefix(conectionConfig.ConectionType, "sqlite") {
 		db, err = gorm.Open(sqlite.Open(conectionConfig.ConectionString), &gorm.Config{})
 
-		if err != nil {
-			log.Fatal(err.Error())
-		}
+		handleError(err)
 	} else {
-		log.Fatal(fmt.Errorf("invalid conection type: %s. valid types: mysql, postgres, sqlite", conectionConfig.ConectionType))
+		handleError(fmt.Errorf("invalid conection type: %s. valid types: mysql, postgres, sqlite", conectionConfig.ConectionType))
 	}
 
 	if sqlDB != nil {
@@ -366,15 +356,11 @@ func main() {
 
 	queryParams, err := parseQueryParams(flag.Args())
 
-	if err != nil {
-		log.Fatal(err.Error())
-	}
+	handleError(err)
 
 	usedQueryParams, err := parseUsedQueryParams(queryRaw, queryParams)
 
-	if err != nil {
-		log.Fatal(err.Error())
-	}
+	handleError(err)
 
 	var dbQuery *gorm.DB
 
@@ -386,17 +372,13 @@ func main() {
 
 	rows, err := dbQuery.Rows()
 
-	if err != nil {
-		log.Fatal(err.Error())
-	}
+	handleError(err)
 
 	defer rows.Close()
 
 	mapOfRows, err := parseRowsToMaps(rows)
 
-	if err != nil {
-		log.Fatal(err.Error())
-	}
+	handleError(err)
 
 	var result interface{}
 
@@ -477,15 +459,11 @@ func main() {
 		withWrapper[*useWrapper] = result
 
 		res, err := json.Marshal(withWrapper)
-		if err != nil {
-			log.Fatal(err.Error())
-		}
+		handleError(err)
 		fmt.Println(string(res))
 	} else {
 		res, err := json.Marshal(result)
-		if err != nil {
-			log.Fatal(err.Error())
-		}
+		handleError(err)
 		fmt.Println(string(res))
 	}
 }
