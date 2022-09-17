@@ -2,10 +2,21 @@ package io
 
 import (
 	"encoding/csv"
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"os"
 )
+
+func FileExists(fileName string) bool {
+	info, err := os.Stat(fileName)
+
+	if os.IsNotExist(err) {
+		return false
+	}
+
+	return !info.IsDir()
+}
 
 func LoadFileContentAsString(file string) (string, error) {
 	if file == "" {
@@ -31,7 +42,7 @@ func GetEnvOrDefault(envName, defaultValue string) string {
 	return v
 }
 
-func SaveCSV(file string, dataMap []map[string]string) error {
+func SaveCSV(file string, dataMap []map[string]interface{}) error {
 	if file == "" {
 		return fmt.Errorf("output file name is required")
 	}
@@ -45,14 +56,14 @@ func SaveCSV(file string, dataMap []map[string]string) error {
 
 	writer := csv.NewWriter(f)
 
-	var data = [][]string{}
+	var data [][]string
 
 	if len(dataMap) == 0 {
 		return nil
 	}
 
 	firstRow := dataMap[0]
-	headers := []string{}
+	var headers []string
 
 	for key, _ := range firstRow {
 		headers = append(headers, key)
@@ -61,9 +72,9 @@ func SaveCSV(file string, dataMap []map[string]string) error {
 	data = append(data, headers)
 
 	for _, row := range dataMap {
-		rowAsList := []string{}
+		var rowAsList []string
 		for _, field := range headers {
-			rowAsList = append(rowAsList, row[field])
+			rowAsList = append(rowAsList, fmt.Sprint(row[field]))
 		}
 		data = append(data, rowAsList)
 	}
@@ -74,4 +85,18 @@ func SaveCSV(file string, dataMap []map[string]string) error {
 	}
 
 	return nil
+}
+
+func SaveJSON(filename string, data interface{}) error {
+	if filename == "" {
+		return fmt.Errorf("output file name is required")
+	}
+
+	fileBytes, err := json.MarshalIndent(data, "", " ")
+
+	if err != nil {
+		return err
+	}
+
+	return ioutil.WriteFile(filename, fileBytes, 0644)
 }
