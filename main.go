@@ -12,7 +12,7 @@ import (
 )
 
 var (
-	configFile     = flag.String("config", "", "Config file like config.json")
+	configFile     = flag.String("config", "", "Config file like config.json. Default location USER_HOME/.gosql2json/config.json")
 	connectionName = flag.String("name", "default", "Database connection name in config file. Default default")
 	queryName      = flag.String("query", "default", "Query name in config file. Default default")
 	wrapper        = flag.String("wrapper", "", "Use an extra object as a wrapper")
