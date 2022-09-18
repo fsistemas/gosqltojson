@@ -43,7 +43,7 @@ func NewDBConn(configFile *core.ConfigFile, connectionName string) (DBConn, erro
 	parts := strings.Split(rawConnectionString, "+")
 
 	if len(parts) < 2 {
-		return nil, fmt.Errorf("invalid connection string %s", rawConnectionString)
+		return nil, fmt.Errorf("invalid connection name or connection string '%s'", rawConnectionString)
 	}
 
 	connectionType := parts[0]
@@ -125,7 +125,7 @@ func parseRowsToMaps(rows *sql.Rows) ([]map[string]interface{}, error) {
 		return nil, err
 	}
 
-	values := make([]interface{}, len(columns))
+	values := make([]*string, len(columns))
 	scanArgs := make([]interface{}, len(columns))
 
 	for i := range values {
@@ -142,7 +142,7 @@ func parseRowsToMaps(rows *sql.Rows) ([]map[string]interface{}, error) {
 		rowMap := make(map[string]interface{})
 
 		for i, colum := range columns {
-			currentValue := values[i]
+			currentValue := *values[i]
 
 			rowMap[colum] = currentValue
 		}
