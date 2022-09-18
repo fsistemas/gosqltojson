@@ -49,7 +49,7 @@ func TestConfigFile_GetQuery(t *testing.T) {
 		t.Fail()
 	}
 
-	queryString, err = configFile.GetQuery("@../testdata/query.sql")
+	queryString, err = configFile.GetQuery("@../testdata/test_query.sql")
 	if err != nil || "SELECT 1 AS a, 2 AS b" != queryString {
 		t.Log("Expected Query: SELECT 1 AS a, 2 as b. But was: ", queryString, err)
 		t.Fail()
@@ -63,7 +63,7 @@ func TestConfigFile_GetQuery(t *testing.T) {
 }
 
 func TestNewConfigFile(t *testing.T) {
-	configFile, err := NewConfigFile("../testdata/config.json")
+	configFile, err := NewConfigFile("../testdata/test_config.json")
 
 	if err != nil {
 		t.Log("Expected configFile without error. But was: ", configFile, err)
@@ -93,7 +93,7 @@ func TestNewConfigFile(t *testing.T) {
 
 func createRunConfig(output string) RunConfig {
 	return RunConfig{
-		ConfigFile:     "config.json",
+		ConfigFile:     "test_config.json",
 		Format:         "json",
 		ConnectionName: "default",
 		QueryName:      "default",
