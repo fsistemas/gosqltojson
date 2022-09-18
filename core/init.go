@@ -40,13 +40,13 @@ func (config *RunConfig) GetOutputFileName() string {
 }
 
 func (config *ConfigFile) GetConnection(connectionName string) string {
-	rawQuery := config.Connections[connectionName]
+	rawConnection := config.Connections[connectionName]
 
-	if rawQuery == "" {
+	if rawConnection == "" {
 		return connectionName
 	}
 
-	return rawQuery
+	return rawConnection
 }
 
 func (config *ConfigFile) GetQuery(queryName string) (string, error) {
@@ -71,7 +71,7 @@ func NewConfigFile(file string) (*ConfigFile, error) {
 	configFileName := file
 	config := new(ConfigFile)
 
-	if file == "" {
+	if configFileName == "" {
 		configFileName = io.GetEnvOrDefault("HOME", ".") + "/.gosql2json/config.json"
 
 		if !io.FileExists(configFileName) {
