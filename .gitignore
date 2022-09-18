@@ -1,9 +1,12 @@
+.idea
 #binary
 gosqltojson
 #local config
 config.json
 #local multiline sql query
-*.sql
+query.sql
+mysqlquery.sql
+scripts.sql
 #local sqlite databases
-*.db
+test.db
 docker-compose.yml
