@@ -1,0 +1,8 @@
+{
+  "connections": {
+    "default": "sqlite+unit_test.db"
+  },
+  "queries": {
+    "default": "SELECT 100 AS a, 200 AS b"
+  }
+}
