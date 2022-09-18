@@ -4,22 +4,23 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"log"
-
+	"franciscoperez.dev/gosqltojson/core"
 	"franciscoperez.dev/gosqltojson/database"
 	"franciscoperez.dev/gosqltojson/io"
+	"log"
+	"reflect"
 )
 
 var (
-	configFile    = flag.String("config", io.GetEnvOrDefault("HOME", ".")+"/.sql2json/config.json", "Config file")
-	conectionName = flag.String("name", "default", "Database connection name in config file")
-	queryName     = flag.String("query", "default", "Query name in config file")
-	wrapper       = flag.String("wrapper", "", "Use an extra object as a wrapper")
-	firstOnly     = flag.Bool("first", false, "Get first row only")
-	keyName       = flag.String("key", "", "Field name used to compute key name")
-	valueName     = flag.String("value", "", "Field name used to compute value for key")
-	output        = flag.String("output", "", "file name to write the output")
-	format        = flag.String("format", "json", "Format to write the output")
+	configFile     = flag.String("config", "", "Config file like config.json")
+	connectionName = flag.String("name", "default", "Database connection name in config file. Default default")
+	queryName      = flag.String("query", "default", "Query name in config file. Default default")
+	wrapper        = flag.String("wrapper", "", "Use an extra object as a wrapper")
+	firstOnly      = flag.Bool("first", false, "Get first row only. Default false")
+	keyName        = flag.String("key", "", "Field name used to compute key name")
+	valueName      = flag.String("value", "", "Field name used to compute value for key")
+	output         = flag.String("output", "", "file name to write the output. example: output.csv, output.json")
+	format         = flag.String("format", "json", "Format to write the output. Default json")
 )
 
 func handleError(err error) {
@@ -31,111 +32,143 @@ func handleError(err error) {
 func main() {
 	flag.Parse()
 
-	runConfig := database.RunConfig{
-		ConfigFile:    *configFile,
-		ConectionName: *conectionName,
-		QueryName:     *queryName,
-		Wrapper:       *wrapper,
-		FirstOnly:     *firstOnly,
-		KeyName:       *keyName,
-		ValueName:     *valueName,
-		Output:        *output,
-		Format:        *format,
+	runConfig := core.RunConfig{
+		ConfigFile:     *configFile,
+		ConnectionName: *connectionName,
+		QueryName:      *queryName,
+		Wrapper:        *wrapper,
+		FirstOnly:      *firstOnly,
+		KeyName:        *keyName,
+		ValueName:      *valueName,
+		Output:         *output,
+		Format:         *format,
 	}
 
-	mapOfRows, err := database.RunQuery(runConfig)
+	listMapOfRows, err := database.RunQuery(runConfig, flag.Args(), database.NewDBConn)
 	handleError(err)
-
-	if runConfig.Output != "" && runConfig.Format == "csv" {
-		err = io.SaveCSV(runConfig.Output, mapOfRows)
-		handleError(err)
-		return
-	}
 
 	var result interface{}
 
 	if *firstOnly {
-		var item map[string]string
+		if len(listMapOfRows) > 0 {
+			item := listMapOfRows[0]
+			singleResult := make(map[string]interface{})
 
-		if len(mapOfRows) > 0 {
-			item = mapOfRows[0]
-		}
-
-		if len(mapOfRows) > 0 {
 			if *keyName != "" && *valueName != "" {
-				itemResult := make(map[string]interface{})
+				newKey := fmt.Sprint(item[*keyName])
+				newValue := item[*valueName]
 
-				key := item[*keyName]
-				value := item[*valueName]
-
-				itemResult[key] = value
-
-				result = itemResult
-			} else if *keyName != "" || *valueName != "" {
-				var key string
-
-				if *keyName != "" {
-					key = *keyName
+				singleResult[newKey] = newValue
+				result = singleResult
+			} else if *keyName != "" {
+				//Single value by key
+				if value, isMapContainsKey := item[*keyName]; isMapContainsKey {
+					result = value
 				} else {
-					key = *valueName
+					//First value, does not matter the key
+					for _, v := range item {
+						result = v
+						break
+					}
 				}
-
-				result = item[key]
 			} else {
-				if *keyName != "" && *valueName == "" {
-					result = ""
-				} else {
-					result = item
-				}
+				singleResult = item
+				result = singleResult
 			}
 		} else {
-			result = make(map[string]string)
+			//No data
+			if *keyName != "" && *valueName == "" {
+				result = ""
+			} else {
+				result = make(map[string]interface{})
+			}
 		}
 	} else {
-		if *keyName != "" && *valueName != "" {
-			var newRows []map[string]string
+		//No first only
+		var newResult []interface{}
 
-			for _, row := range mapOfRows {
-				key := fmt.Sprintf("%v", row[*keyName])
-				value := row[*valueName]
-				item := make(map[string]string)
-				item[key] = value
-				newRows = append(newRows, item)
-			}
-
-			result = newRows
-		} else if *keyName != "" || *valueName != "" {
-			var key string
-
+		for _, row := range listMapOfRows {
 			if *keyName != "" {
-				key = *keyName
+				if *valueName != "" {
+					keyValueResult := make(map[string]interface{})
+
+					keyValueResult[fmt.Sprint(row[*keyName])] = row[*valueName]
+					newResult = append(newResult, keyValueResult)
+				} else {
+					newResult = append(newResult, row[*keyName])
+				}
 			} else {
-				key = *valueName
+				newResult = append(newResult, row)
 			}
-
-			var newRows []string
-
-			for _, row := range mapOfRows {
-				value := fmt.Sprintf("%v", row[key])
-				newRows = append(newRows, value)
-			}
-
-			result = newRows
-		} else {
-			result = mapOfRows
 		}
+
+		result = newResult
 	}
 
-	if *wrapper != "" {
-		withWrapper := make(map[string]interface{})
-		withWrapper[*wrapper] = result
+	supportCSV := true
 
-		res, err := json.Marshal(withWrapper)
+	withWrapper := make(map[string]interface{})
+
+	if *wrapper != "" && runConfig.Format != "csv" {
+		withWrapper[*wrapper] = result
+		supportCSV = false
+	}
+
+	if runConfig.Output != "" {
+		if supportCSV && runConfig.Format == "csv" {
+			var csvList []map[string]interface{}
+
+			if reflect.ValueOf(result).Kind() == reflect.Map {
+				csvList = append(csvList, result.(map[string]interface{}))
+			} else if reflect.ValueOf(result).Kind() == reflect.Slice {
+				for _, item := range result.([]interface{}) {
+					if reflect.ValueOf(item).Kind() == reflect.Map {
+						csvList = append(csvList, item.(map[string]interface{}))
+					} else {
+						var newRow map[string]interface{}
+
+						if *keyName != "" {
+							newRow[*keyName] = item
+						} else {
+							newRow["key"] = item
+						}
+					}
+				}
+			} else {
+				var firstRow map[string]interface{}
+
+				if *keyName != "" {
+					firstRow[*keyName] = result
+				} else {
+					firstRow["key"] = result
+				}
+				csvList = append(csvList, firstRow)
+			}
+
+			fileName := runConfig.GetOutputFileName()
+
+			err = io.SaveCSV(fileName, csvList)
+		} else if runConfig.Format == "json" {
+			fileName := runConfig.GetOutputFileName()
+
+			if *wrapper != "" {
+				err = io.SaveJSON(fileName, withWrapper)
+			} else {
+				err = io.SaveJSON(fileName, result)
+			}
+		}
+
 		handleError(err)
-		fmt.Println(string(res))
+		return
 	} else {
-		res, err := json.Marshal(result)
-		handleError(err)
-		fmt.Println(string(res))
+		if *wrapper != "" {
+			res, err := json.Marshal(withWrapper)
+			handleError(err)
+			fmt.Println(string(res))
+		} else {
+			res, err := json.Marshal(result)
+			handleError(err)
+			fmt.Println(string(res))
+		}
 	}
 }
