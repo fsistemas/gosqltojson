@@ -142,7 +142,11 @@ func parseRowsToMaps(rows *sql.Rows) ([]map[string]interface{}, error) {
 		rowMap := make(map[string]interface{})
 
 		for i, colum := range columns {
-			currentValue := *values[i]
+			currentValue := ""
+
+			if values[i] != nil {
+				currentValue = *values[i]
+			}
 
 			rowMap[colum] = currentValue
 		}
