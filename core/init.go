@@ -26,6 +26,7 @@ type RunConfig struct {
 	ValueName      string
 	Output         string
 	Format         string
+	JsonKeys       string
 }
 
 func (config *RunConfig) GetOutputFileName() string {
@@ -75,16 +76,21 @@ func NewConfigFile(file string) (*ConfigFile, error) {
 		configFileName = io.GetEnvOrDefault("HOME", ".") + "/.gosql2json/config.json"
 
 		if !io.FileExists(configFileName) {
-			//Fallback to allow user to test the tool without any configuration
-			config.Connections = Connections{
-				"default": "sqlite+test.db",
-			}
+			//Fallback to config in current directory
+			configFileName = "./config.json"
 
-			config.Queries = Queries{
-				"default": "SELECT 1 AS a, 2 AS b",
-			}
+			if !io.FileExists(configFileName) {
+				//Fallback to allow user to test the tool without any configuration
+				config.Connections = Connections{
+					"default": "sqlite+test.db",
+				}
 
-			return config, nil
+				config.Queries = Queries{
+					"default": "SELECT 1 AS a, 2 AS b",
+				}
+
+				return config, nil
+			}
 		}
 	}
 
