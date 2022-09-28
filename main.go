@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"franciscoperez.dev/gosqltojson/core"
 	"franciscoperez.dev/gosqltojson/database"
+	"franciscoperez.dev/gosqltojson/formats"
 	"franciscoperez.dev/gosqltojson/io"
 	"log"
 	"reflect"
@@ -21,6 +22,7 @@ var (
 	valueName      = flag.String("value", "", "Field name used to compute value for key")
 	output         = flag.String("output", "", "file name to write the output. example: output.csv, output.json")
 	format         = flag.String("format", "json", "Format to write the output. Default json")
+	jsonkeys       = flag.String("jsonkeys", "", "Comma separated value to specify column names holding a json column/value")
 )
 
 func handleError(err error) {
@@ -42,6 +44,7 @@ func main() {
 		ValueName:      *valueName,
 		Output:         *output,
 		Format:         *format,
+		JsonKeys:       *jsonkeys,
 	}
 
 	listMapOfRows, err := database.RunQuery(runConfig, flag.Args(), database.NewDBConn)
@@ -166,9 +169,15 @@ func main() {
 			handleError(err)
 			fmt.Println(string(res))
 		} else {
-			res, err := json.Marshal(result)
-			handleError(err)
-			fmt.Println(string(res))
+			switch result.(type) {
+			case string:
+				fmt.Println(result)
+				break
+			default:
+				res, err := formats.ToJsonString(result)
+				handleError(err)
+				fmt.Println(res)
+			}
 		}
 	}
 }
