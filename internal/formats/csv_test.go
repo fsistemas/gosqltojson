@@ -3,7 +3,7 @@ package formats
 import "testing"
 
 func TestToCSVWithNullOrEmptyList(t *testing.T) {
-	csv, err := ToCSV(nil)
+	csv, err := MapToCSVWithHeaders(nil)
 
 	if err != nil {
 		t.Log("Unexpected error")
@@ -15,7 +15,7 @@ func TestToCSVWithNullOrEmptyList(t *testing.T) {
 		t.Fail()
 	}
 
-	csv, err = ToCSV([]map[string]interface{}{})
+	csv, err = MapToCSVWithHeaders([]map[string]interface{}{})
 
 	if err != nil {
 		t.Log("Unexpected error")
@@ -40,7 +40,7 @@ func TestToCSV(t *testing.T) {
 		},
 	}
 
-	csv, err := ToCSV(dataMap)
+	csv, err := MapToCSVWithHeaders(dataMap)
 
 	if err != nil {
 		t.Log("Unexpected error")

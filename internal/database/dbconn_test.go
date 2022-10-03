@@ -1,14 +1,14 @@
 package database
 
 import (
-	"franciscoperez.dev/gosqltojson/core"
+	"franciscoperez.dev/gosqltojson/internal/config"
 	"testing"
 )
 
 func TestNewDBConnOK(t *testing.T) {
-	configFile := core.ConfigFile{
+	configFile := config.ConfigFile{
 		Connections: map[string]string{
-			"testdata_db": "sqlite+../testdata/testdata.db",
+			"testdata_db": "sqlite+../../testdata/testdata.db",
 		},
 	}
 
@@ -21,7 +21,7 @@ func TestNewDBConnOK(t *testing.T) {
 }
 
 func TestNewDBConnInvalidConnectionString(t *testing.T) {
-	configFile := core.ConfigFile{
+	configFile := config.ConfigFile{
 		Connections: map[string]string{
 			"testdata_db": "../testdata/testdata.db",
 		},
@@ -36,7 +36,7 @@ func TestNewDBConnInvalidConnectionString(t *testing.T) {
 }
 
 func TestNewDBConnInvalidConnectionType(t *testing.T) {
-	configFile := core.ConfigFile{
+	configFile := config.ConfigFile{
 		Connections: map[string]string{
 			"testdata_db": "unknown+../testdata/testdata.db",
 		},

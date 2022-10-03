@@ -2,7 +2,7 @@ package parameter
 
 import (
 	"fmt"
-	"franciscoperez.dev/gosqltojson/utils"
+	"franciscoperez.dev/gosqltojson/internal/utils"
 	"strconv"
 	"strings"
 	"time"

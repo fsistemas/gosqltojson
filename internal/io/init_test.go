@@ -16,14 +16,14 @@ func TestFileExists(t *testing.T) {
 		t.Fail()
 	}
 
-	if !FileExists("../testdata/file_exists.txt") {
+	if !FileExists("../../testdata/file_exists.txt") {
 		t.Log("testdata/file_exists.txt should exist")
 		t.Fail()
 	}
 }
 
 func TestLoadFileContentAsString(t *testing.T) {
-	_, err := LoadFileContentAsString("../testdata/file_exists.txt")
+	_, err := LoadFileContentAsString("../../testdata/file_exists.txt")
 
 	if err != nil {
 		t.Log("LoadFileContentAsString should be able to read ../testdata/file_exists.txt", err)
@@ -37,10 +37,10 @@ func TestLoadFileContentAsString(t *testing.T) {
 		t.Fail()
 	}
 
-	_, err = LoadFileContentAsString("../testdata/file_does_not_exists.txt")
+	_, err = LoadFileContentAsString("../../testdata/file_does_not_exists.txt")
 
 	if err == nil {
-		t.Log("LoadFileContentAsString with ../testdata/file_does_not_exists.txt should be fail")
+		t.Log("LoadFileContentAsString with ../../testdata/file_does_not_exists.txt should be fail")
 		t.Fail()
 	}
 }

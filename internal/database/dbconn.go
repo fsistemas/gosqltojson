@@ -3,7 +3,7 @@ package database
 import (
 	"database/sql"
 	"fmt"
-	"franciscoperez.dev/gosqltojson/core"
+	"franciscoperez.dev/gosqltojson/internal/config"
 	"gorm.io/driver/mysql"
 	"gorm.io/driver/postgres"
 	"gorm.io/driver/sqlite"
@@ -37,7 +37,7 @@ func createDialector(connectionType string, sqlDB *sql.DB) (gorm.Dialector, erro
 	return nil, fmt.Errorf("invalid connectionType: %s", connectionType)
 }
 
-func NewDBConn(configFile *core.ConfigFile, connectionName string) (DBConn, error) {
+func NewDBConn(configFile *config.ConfigFile, connectionName string) (DBConn, error) {
 	rawConnectionString := configFile.GetConnection(connectionName)
 
 	parts := strings.Split(rawConnectionString, "+")

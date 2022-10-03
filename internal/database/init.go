@@ -2,14 +2,18 @@ package database
 
 import (
 	"fmt"
-	"franciscoperez.dev/gosqltojson/core"
-	"franciscoperez.dev/gosqltojson/formats"
-	"franciscoperez.dev/gosqltojson/parameter"
+	"franciscoperez.dev/gosqltojson/internal/config"
+	"franciscoperez.dev/gosqltojson/internal/formats"
+	"franciscoperez.dev/gosqltojson/internal/parameter"
 	"strings"
 )
 
-func RunQuery(runConfig core.RunConfig, queryParamsFlags []string, connectToDB func(*core.ConfigFile, string) (DBConn, error)) ([]map[string]interface{}, error) {
-	configFile, err := core.NewConfigFile(runConfig.ConfigFile)
+func RunQuery(runConfig config.RunConfig, queryParamsFlags []string) ([]map[string]interface{}, error) {
+	return runQuery(runConfig, queryParamsFlags, NewDBConn)
+}
+
+func runQuery(runConfig config.RunConfig, queryParamsFlags []string, connectToDB func(*config.ConfigFile, string) (DBConn, error)) ([]map[string]interface{}, error) {
+	configFile, err := config.NewConfigFile(runConfig.ConfigFile)
 
 	if err != nil {
 		return nil, err
@@ -43,7 +47,7 @@ func RunQuery(runConfig core.RunConfig, queryParamsFlags []string, connectToDB f
 	return parseRowsJsonColumns(runConfig, rows)
 }
 
-func parseRowsJsonColumns(runConfig core.RunConfig, rows []map[string]interface{}) ([]map[string]interface{}, error) {
+func parseRowsJsonColumns(runConfig config.RunConfig, rows []map[string]interface{}) ([]map[string]interface{}, error) {
 	if runConfig.JsonKeys == "" {
 		return rows, nil
 	}
