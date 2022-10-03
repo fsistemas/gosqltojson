@@ -2,8 +2,8 @@ package io
 
 import (
 	"encoding/csv"
-	"encoding/json"
 	"fmt"
+	"franciscoperez.dev/gosqltojson/formats"
 	"io/ioutil"
 	"os"
 )
@@ -52,31 +52,12 @@ func SaveCSV(file string, dataMap []map[string]interface{}) error {
 		return err
 	}
 
-	defer f.Close()
-
 	writer := csv.NewWriter(f)
 
-	var data [][]string
+	data, err := formats.ToCSV(dataMap)
 
-	if len(dataMap) == 0 {
-		return nil
-	}
-
-	firstRow := dataMap[0]
-	var headers []string
-
-	for key, _ := range firstRow {
-		headers = append(headers, key)
-	}
-
-	data = append(data, headers)
-
-	for _, row := range dataMap {
-		var rowAsList []string
-		for _, field := range headers {
-			rowAsList = append(rowAsList, fmt.Sprint(row[field]))
-		}
-		data = append(data, rowAsList)
+	if err != nil {
+		return err
 	}
 
 	err = writer.WriteAll(data)
@@ -84,7 +65,9 @@ func SaveCSV(file string, dataMap []map[string]interface{}) error {
 		return err
 	}
 
-	return nil
+	err = f.Close()
+
+	return err
 }
 
 func SaveJSON(filename string, data interface{}) error {
@@ -92,7 +75,7 @@ func SaveJSON(filename string, data interface{}) error {
 		return fmt.Errorf("output file name is required")
 	}
 
-	fileBytes, err := json.MarshalIndent(data, "", " ")
+	fileBytes, err := formats.ToJson(data)
 
 	if err != nil {
 		return err
