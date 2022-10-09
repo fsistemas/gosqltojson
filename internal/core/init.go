@@ -21,28 +21,20 @@ func RunQueryWithFn(runConfig config.RunConfig, queryParamsFlags []string, query
 
 	if runConfig.FirstOnly {
 		if len(listMapOfRows) > 0 {
-			item := listMapOfRows[0]
+			row := listMapOfRows[0]
 			singleResult := make(map[string]interface{})
 
 			if runConfig.KeyName != "" && runConfig.ValueName != "" {
-				newKey := fmt.Sprint(item[runConfig.KeyName])
-				newValue := item[runConfig.ValueName]
+				newKey := fmt.Sprint(getKeyValueOrDefault(row, runConfig.KeyName, runConfig.KeyName))
+				newValue := getKeyValueOrDefault(row, runConfig.ValueName, nil)
 
 				singleResult[newKey] = newValue
 				result = singleResult
 			} else if runConfig.KeyName != "" {
 				//Single value by key
-				if value, isMapContainsKey := item[runConfig.KeyName]; isMapContainsKey {
-					result = value
-				} else {
-					//First value, does not matter the key
-					for _, v := range item {
-						result = v
-						break
-					}
-				}
+				result = getKeyValueOrFirstValue(row, runConfig.KeyName)
 			} else {
-				singleResult = item
+				singleResult = row
 				result = singleResult
 			}
 		} else {
@@ -62,7 +54,10 @@ func RunQueryWithFn(runConfig config.RunConfig, queryParamsFlags []string, query
 				if runConfig.ValueName != "" {
 					keyValueResult := make(map[string]interface{})
 
-					keyValueResult[fmt.Sprint(row[runConfig.KeyName])] = row[runConfig.ValueName]
+					newKey := fmt.Sprint(getKeyValueOrDefault(row, runConfig.KeyName, runConfig.KeyName))
+					newValue := getKeyValueOrDefault(row, runConfig.ValueName, nil)
+
+					keyValueResult[newKey] = newValue
 					newResult = append(newResult, keyValueResult)
 				} else {
 					newResult = append(newResult, row[runConfig.KeyName])
@@ -76,4 +71,26 @@ func RunQueryWithFn(runConfig config.RunConfig, queryParamsFlags []string, query
 	}
 
 	return result, nil
+}
+
+func getKeyValueOrFirstValue(item map[string]interface{}, keyName string) interface{} {
+	//Single value by key
+	if value, mapContainsKey := item[keyName]; mapContainsKey {
+		return value
+	} else {
+		//First value, does not matter the key
+		for _, v := range item {
+			return v
+		}
+	}
+
+	return nil
+}
+
+func getKeyValueOrDefault(item map[string]interface{}, keyName string, defaultValue interface{}) interface{} {
+	if value, mapContainsKey := item[keyName]; mapContainsKey {
+		return value
+	}
+
+	return defaultValue
 }
