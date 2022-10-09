@@ -6,27 +6,6 @@ import (
 	"testing"
 )
 
-type FakeDBConn struct {
-}
-
-func (coon FakeDBConn) Close() error {
-	return nil
-}
-
-func (coon FakeDBConn) Query(queryRaw string, parameters map[string]interface{}) ([]map[string]interface{}, error) {
-	rows := []map[string]interface{}{
-		{
-			"a": 1,
-			"b": "2",
-		},
-		{
-			"a": 10,
-			"b": "20",
-		},
-	}
-	return rows, nil
-}
-
 func TestRunQuery(t *testing.T) {
 	runConfig := config.RunConfig{}
 
@@ -80,6 +59,36 @@ func TestRunQuery(t *testing.T) {
 		t.Log("runQuery for a query with missing parameters should return error. But got: ", rows)
 		t.Fail()
 	}
+
+	runConfigQueryWithJsonColumns := config.RunConfig{
+		JsonKeys:  "jsoncolumn",
+		QueryName: "UN_USED_FAKE_QUERY",
+	}
+
+	rows, err = runQuery(runConfigQueryWithJsonColumns, queryParamFlags, createFakeDBConn)
+}
+
+type FakeDBConn struct {
+}
+
+func (coon FakeDBConn) Close() error {
+	return nil
+}
+
+func (coon FakeDBConn) Query(queryRaw string, parameters map[string]interface{}) ([]map[string]interface{}, error) {
+	rows := []map[string]interface{}{
+		{
+			"a":          1,
+			"b":          "2",
+			"jsoncolumn": "{ \"x\": 1, \"y\": \"z\" }",
+		},
+		{
+			"a":          10,
+			"b":          "20",
+			"jsoncolumn": "{ \"x\": 10, \"y\": \"zz\" }",
+		},
+	}
+	return rows, nil
 }
 
 func createFakeDBConn(_ *config.ConfigFile, _ string) (DBConn, error) {
