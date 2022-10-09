@@ -13,16 +13,16 @@ gosqltojson is a go implementation of [sql2json](https://github.com/fsistemas/sq
 - Short version: For fun
 - Long version: To practice and to improve my skills with go programming language creating a useful and real project
 
-# How to use gosql2json
+# How to use gosqltojson
 
 ## Available options and help
-gosql2json -help
+gosqltojson -help
 
 ## Default output format
 The default output format is json.
 
 ## Configuration file
-gosql2json by default use a config file located at USER_HOME/.sql2json/config.json
+gosqltojson by default use a config file located at USER_HOME/.gosqltojson/config.json
 
 config.json structure:
 
@@ -47,7 +47,7 @@ config.json structure:
 
 ## Use a config.json in a different path
 
-You can use gosql2json --config PATH_TO_YOUR_CONFIG_FILE
+You can use gosqltojson --config PATH_TO_YOUR_CONFIG_FILE
 
 ## Available variables to do your life easy:
 - START_CURRENT_MONTH: Date the first day of current month
@@ -286,7 +286,7 @@ Sales.csv
 ### Write sql query result to an Excel file
 
 That feature is not available yet, maybe in the future.
-If you really need excel pleas try [sql2json](https://github.com/fsistemas/sql2json)
+If you really need excel please try [sql2json](https://github.com/fsistemas/sql2json)
 
 ### Write sql query result to a json file
 
